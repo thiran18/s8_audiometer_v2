@@ -1,0 +1,6 @@
+{
+  "appId": "com.example.hear",
+  "appName": "Hear",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}
