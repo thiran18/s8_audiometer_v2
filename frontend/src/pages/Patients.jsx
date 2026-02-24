@@ -16,6 +16,8 @@ export default function Patients() {
     const [searchTerm, setSearchTerm] = useState('')
     const [showAddModal, setShowAddModal] = useState(false)
     const [selectedPatient, setSelectedPatient] = useState(null)
+    const [editMode, setEditMode] = useState(false)
+    const [updating, setUpdating] = useState(false)
 
     // New Patient Form
     const [newPatient, setNewPatient] = useState({
@@ -87,6 +89,31 @@ export default function Patients() {
             fetchPatients() // Refresh list
         } catch (error) {
             alert(error.message)
+        }
+    }
+
+    const handleUpdatePatient = async (e) => {
+        e.preventDefault()
+        try {
+            setUpdating(true)
+            const { error } = await supabase
+                .from('patients')
+                .update({
+                    name: selectedPatient.name,
+                    age: selectedPatient.age ? parseInt(selectedPatient.age) : null,
+                    gender: selectedPatient.gender,
+                    notes: selectedPatient.notes
+                })
+                .eq('id', selectedPatient.id)
+
+            if (error) throw error
+
+            setEditMode(false)
+            fetchPatients() // Refresh list
+        } catch (error) {
+            alert('Error updating patient: ' + error.message)
+        } finally {
+            setUpdating(false)
         }
     }
 
@@ -313,30 +340,80 @@ export default function Patients() {
 
                         {/* Right Content - Details */}
                         <div className="w-full md:w-[60%] p-6 md:p-10 bg-white">
-                            <div className="flex items-center gap-3 mb-6 md:mb-8">
-                                <div className="bg-blue-600 text-white p-1.5 rounded-full">
-                                    <User size={16} />
+                            <div className="flex items-center justify-between mb-8">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-blue-600 text-white p-1.5 rounded-full">
+                                        <User size={16} />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-gray-900">Personal Information</h3>
                                 </div>
-                                <h3 className="text-lg font-bold text-gray-900">Personal Information</h3>
+                                {!isTeacher && (
+                                    <button
+                                        onClick={() => setEditMode(!editMode)}
+                                        className="text-xs font-bold text-blue-600 hover:text-blue-700"
+                                    >
+                                        {editMode ? 'Cancel Edit' : 'Edit Info'}
+                                    </button>
+                                )}
                             </div>
 
-                            <div className="grid grid-cols-2 gap-y-6 md:gap-y-8 gap-x-4">
+                            <form onSubmit={handleUpdatePatient} className="grid grid-cols-2 gap-y-6 md:gap-y-8 gap-x-4">
+                                <div>
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Full Name</p>
+                                    {editMode ? (
+                                        <input
+                                            type="text"
+                                            className="w-full px-3 py-2 border rounded-lg text-sm"
+                                            value={selectedPatient.name}
+                                            onChange={e => setSelectedPatient({ ...selectedPatient, name: e.target.value })}
+                                        />
+                                    ) : (
+                                        <p className="text-base md:text-lg font-bold text-gray-900">{selectedPatient.name}</p>
+                                    )}
+                                </div>
                                 <div>
                                     <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Age</p>
-                                    <p className="text-base md:text-lg font-bold text-gray-900">{selectedPatient.age || '-'}</p>
+                                    {editMode ? (
+                                        <input
+                                            type="number"
+                                            className="w-full px-3 py-2 border rounded-lg text-sm"
+                                            value={selectedPatient.age || ''}
+                                            onChange={e => setSelectedPatient({ ...selectedPatient, age: e.target.value })}
+                                        />
+                                    ) : (
+                                        <p className="text-base md:text-lg font-bold text-gray-900">{selectedPatient.age || '-'}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Gender</p>
-                                    <p className="text-base md:text-lg font-bold text-gray-900">{selectedPatient.gender || '-'}</p>
+                                    {editMode ? (
+                                        <select
+                                            className="w-full px-3 py-2 border rounded-lg text-sm"
+                                            value={selectedPatient.gender}
+                                            onChange={e => setSelectedPatient({ ...selectedPatient, gender: e.target.value })}
+                                        >
+                                            <option>Male</option>
+                                            <option>Female</option>
+                                            <option>Other</option>
+                                        </select>
+                                    ) : (
+                                        <p className="text-base md:text-lg font-bold text-gray-900">{selectedPatient.gender || '-'}</p>
+                                    )}
                                 </div>
 
                                 <div className="col-span-2">
-                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Registered Date</p>
-                                    <p className="text-base md:text-lg font-bold text-gray-900">
-                                        {new Date(selectedPatient.created_at).toLocaleDateString('en-GB', {
-                                            day: 'numeric', month: 'short', year: 'numeric'
-                                        })}
-                                    </p>
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Notes</p>
+                                    {editMode ? (
+                                        <textarea
+                                            className="w-full px-3 py-2 border rounded-lg text-sm min-h-[100px]"
+                                            value={selectedPatient.notes || ''}
+                                            onChange={e => setSelectedPatient({ ...selectedPatient, notes: e.target.value })}
+                                        />
+                                    ) : (
+                                        <p className="text-sm text-gray-600 italic font-medium bg-gray-50 p-3 rounded-xl border border-dashed border-gray-200">
+                                            {selectedPatient.notes || 'No notes available.'}
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div className="col-span-2">
@@ -349,7 +426,19 @@ export default function Patients() {
                                         <span className="ml-1 font-bold text-blue-600">{selectedPatient.sections?.name || '-'}</span>
                                     </div>
                                 </div>
-                            </div>
+
+                                {editMode && (
+                                    <div className="col-span-2 pt-4">
+                                        <button
+                                            type="submit"
+                                            disabled={updating}
+                                            className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-100 disabled:opacity-50"
+                                        >
+                                            {updating ? 'Saving...' : 'Save Changes'}
+                                        </button>
+                                    </div>
+                                )}
+                            </form>
                         </div>
                     </div>
                 </div>

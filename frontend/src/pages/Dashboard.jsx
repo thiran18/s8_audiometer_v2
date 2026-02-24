@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react'
-import { Users, FileText, ChevronRight, School, Search, Filter } from 'lucide-react'
+import { Users, FileText, ChevronRight, School, Search } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { Link } from 'react-router-dom'
 import Loading from '../components/ui/Loading'
@@ -115,6 +115,7 @@ export default function Dashboard() {
         }
     }
 
+
     const filteredSections = sections.filter(school =>
         school.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         school.sections.some(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -130,18 +131,19 @@ export default function Dashboard() {
                     <p className="text-gray-500 mt-1">Reviewing results across all associated schools</p>
                 </div>
 
-                {/* Search Bar - Full width on mobile */}
-                <div className="relative w-full lg:w-96">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="h-5 w-5 text-gray-400" />
+                <div className="flex flex-col sm:flex-row w-full lg:w-auto gap-4">
+                    <div className="relative w-full lg:w-80">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Search className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <input
+                            type="text"
+                            className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm transition-shadow"
+                            placeholder="Search schools or classes..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
                     </div>
-                    <input
-                        type="text"
-                        className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm transition-shadow"
-                        placeholder="Search schools or classes..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
                 </div>
             </div>
 
@@ -189,14 +191,16 @@ export default function Dashboard() {
                                 <div key={section.id} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-all">
                                     <div className="flex justify-between items-start mb-4">
                                         <div>
-                                            <h3 className="font-bold text-gray-900">{section.name}</h3>
+                                            <h3 className="font-bold text-gray-900 line-clamp-1">{section.name}</h3>
                                             <p className="text-xs text-gray-500">{section.patients?.length || 0} Students</p>
                                         </div>
-                                        {section.pendingCount > 0 && (
-                                            <span className="bg-orange-100 text-orange-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                                                {section.pendingCount} Pending
-                                            </span>
-                                        )}
+                                        <div className="flex flex-col items-end gap-2">
+                                            {section.pendingCount > 0 && (
+                                                <span className="bg-orange-100 text-orange-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                                    {section.pendingCount} Pending
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
 
                                     <div className="space-y-2 mb-4">
