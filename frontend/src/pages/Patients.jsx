@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { Plus, Search, User, FileText, ChevronRight, Eye, Trash2, X, School, BookOpen } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 import Loading from '../components/ui/Loading'
 
 export default function Patients() {
@@ -38,6 +39,7 @@ export default function Patients() {
             if (error) throw error
             setPatients(data)
         } catch (error) {
+            if (error.name === 'AbortError') return;
             console.error('Error fetching patients:', error)
             setError(error.message)
         } finally {

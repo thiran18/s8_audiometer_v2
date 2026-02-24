@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Users, UserPlus, ArrowLeft, Activity, Trash2, Calendar, ChevronRight } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 import Loading from '../components/ui/Loading'
 
 export default function SectionDetail() {

@@ -1,6 +1,6 @@
 import React from 'react'
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 import {
     LayoutDashboard,
     Users,
@@ -138,8 +138,8 @@ export default function Layout() {
                                                 to={item.path}
                                                 onClick={() => setIsMobileMenuOpen(false)}
                                                 className={`flex items-center space-x-4 p-4 rounded-xl transition-colors ${isActive
-                                                        ? 'bg-blue-50 text-blue-700'
-                                                        : 'text-gray-600 hover:bg-gray-50'
+                                                    ? 'bg-blue-50 text-blue-700'
+                                                    : 'text-gray-600 hover:bg-gray-50'
                                                     }`}
                                             >
                                                 <Icon className={`w-6 h-6 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />

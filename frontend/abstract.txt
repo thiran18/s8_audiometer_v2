@@ -1,0 +1,16 @@
+Project Abstract: Hearing Loss Identification System
+
+This project is a comprehensive web-based platform designed for the early identification and management of hearing loss, specifically optimized for educational and clinical workflows.
+
+Core Features:
+1. Multi-Role Architecture: Dedicated dashboards for Teachers and Clinicians to manage separate but interconnected workflows.
+2. Educational Management (Teacher Role): Allows teachers to create classroom sections, manage student profiles, and coordinate hearing screening registrations within their institutions.
+3. Clinical Assessment (Clinician Role): Provides medical professionals with tools to review hearing test results, generate clinical reports, and provide standardized recommendations based on WHO hearing grades.
+4. Seamless Integration: Facilitates data flow from school-based screenings to professional clinical evaluations, ensuring early intervention for students in need.
+
+Technical Stack:
+- Frontend: React with Vite for a fast, responsive, and modern user interface.
+- Backend/Database: Supabase (PostgreSQL) for secure authentication, real-time data storage, and role-based access control.
+- UI: Styled with Tailwind CSS/Vanilla CSS and Lucide React icons for a professional medical aesthetic.
+
+The goal of this system is to bridge the gap between school screenings and clinical diagnoses, making hearing health accessible and actionable.

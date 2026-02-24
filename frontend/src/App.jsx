@@ -12,7 +12,8 @@ import SectionDetail from './pages/SectionDetail'
 // Placeholder for Test (Coming in next step)
 import Test from './pages/Test'
 
-import { AuthProvider, useAuth } from './context/AuthContext'
+import { AuthProvider } from './context/AuthContext'
+import { useAuth } from './context/useAuth'
 import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './components/Layout'
 

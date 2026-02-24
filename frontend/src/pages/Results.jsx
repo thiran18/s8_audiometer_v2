@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react'
 import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
@@ -13,7 +14,7 @@ import {
     ReferenceArea
 } from 'recharts'
 import Loading from '../components/ui/Loading'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 
 const ReportEditor = ({ screeningId, initialReport, isClinician }) => {
     const [report, setReport] = useState(initialReport || '')
@@ -100,7 +101,7 @@ export default function Results() {
                 .from('screenings')
                 .select(`
           *,
-          patients (*)
+            patients (*)
         `)
                 .eq('id', id)
                 .single()
@@ -454,7 +455,7 @@ export default function Results() {
             <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-2xl border border-indigo-100 shadow-sm relative overflow-hidden">
                 <div className="relative z-10">
                     <div className="flex items-center space-x-2 mb-3">
-                        <Brain className="w-5 h-5 text-indigo-600" />
+                        {/* <Brain className="w-5 h-5 text-indigo-600" />*/}
                         <h4 className="font-bold text-indigo-900">Automated Clinical Interpretation</h4>
                     </div>
                     <p className="text-indigo-800 leading-relaxed font-medium">
@@ -464,9 +465,9 @@ export default function Results() {
                         <Stethoscope className="w-3 h-3" />
                     </div>*/}
                 </div>
-                <div className="absolute top-0 right-0 p-4 opacity-10">
+                {/*<div className="absolute top-0 right-0 p-4 opacity-10">
                     <Activity className="w-24 h-24 text-indigo-900" />
-                </div>
+                </div>*/}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

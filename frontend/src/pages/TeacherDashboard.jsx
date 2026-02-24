@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Plus, BookOpen, ChevronRight, School, Users, History, Search } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 import Loading from '../components/ui/Loading'
 
 export default function TeacherDashboard() {

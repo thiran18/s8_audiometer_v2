@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Volume2, ChevronRight, X, Info, CheckCircle2, VolumeX, Ghost, Zap, ArrowRight, Activity, Mic, MicOff, Settings, Clock } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 
 const SCREENING_FREQUENCIES = [500, 1000, 2000, 4000];
 const CLINICAL_FREQUENCIES = [250, 500, 1000, 2000, 4000, 8000];
@@ -705,8 +705,8 @@ export default function Test() {
                     <button
                         onClick={handleNotHeard}
                         className={`group p-5 border-2 rounded-2xl transition-all flex flex-col items-center justify-center min-h-[120px] active:scale-95 ${lastClickedButton === 'notHeard'
-                                ? 'bg-blue-50 border-blue-400 scale-105'
-                                : 'border-[#CFD8DC] hover:bg-[#CFD8DC]/30 hover:border-[#607D8B]'
+                            ? 'bg-blue-50 border-blue-400 scale-105'
+                            : 'border-[#CFD8DC] hover:bg-[#CFD8DC]/30 hover:border-[#607D8B]'
                             }`}
                     >
                         <span className="text-sm font-medium text-[#607D8B] mb-2">Not Heard</span>
@@ -728,8 +728,8 @@ export default function Test() {
                     <button
                         onClick={handleHeard}
                         className={`group p-5 rounded-2xl transition-all flex flex-col items-center justify-center min-h-[120px] shadow-lg active:scale-95 ${lastClickedButton === 'heard'
-                                ? 'bg-[#78909C] scale-105 shadow-[#B0BEC5]'
-                                : 'bg-[#607D8B] hover:bg-[#546E7A] shadow-[#CFD8DC]'
+                            ? 'bg-[#78909C] scale-105 shadow-[#B0BEC5]'
+                            : 'bg-[#607D8B] hover:bg-[#546E7A] shadow-[#CFD8DC]'
                             }`}
                     >
                         <Zap className={`w-6 h-6 mb-2 transition-colors ${lastClickedButton === 'heard' ? 'text-yellow-300' : 'text-white'}`} />

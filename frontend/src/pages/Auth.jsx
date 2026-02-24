@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 import { supabase } from '../lib/supabase'
 import { Lock, Mail, Activity, User, ArrowRight, School } from 'lucide-react'
 
@@ -254,3 +254,4 @@ export default function Auth() {
         </div>
     )
 }
+

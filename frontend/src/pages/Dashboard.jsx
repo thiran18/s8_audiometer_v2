@@ -1,9 +1,10 @@
+
 import React, { useEffect, useState } from 'react'
 import { Users, FileText, ChevronRight, School, Search, Filter } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { Link } from 'react-router-dom'
 import Loading from '../components/ui/Loading'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 
 export default function Dashboard() {
     const { userProfile } = useAuth()
