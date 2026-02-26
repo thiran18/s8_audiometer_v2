@@ -40,9 +40,9 @@ export default function Login() {
     }
 
     return (
-        <div className="min-h-screen bg-[#0F111A] flex font-outfit">
+        <div className="min-h-screen bg-[#1A1D2B] md:bg-[#0F111A] flex font-outfit">
             <div className="w-full flex flex-col md:flex-row border-slate-800/50">
-                {/* Left Side - Image/Branding */}
+                {/* Left Side - Image/Branding (Desktop Only) */}
                 <div className="hidden md:block md:w-1/2 relative">
                     <img
                         src={authBg}
@@ -61,10 +61,10 @@ export default function Login() {
                 </div>
 
                 {/* Right Side - Form */}
-                <div className="w-full md:w-1/2 p-8 sm:p-12 lg:p-16 flex flex-col justify-center bg-[#1A1D2B]">
+                <div className="w-full md:w-1/2 min-h-screen md:min-h-0 p-8 sm:p-12 lg:p-16 flex flex-col justify-center bg-[#1A1D2B]">
                     <div className="max-w-md mx-auto w-full">
                         <div className="mb-10">
-                            <h2 className="text-4xl font-bold text-white mb-2">Sign In</h2>
+                            <h2 className="text-4xl md:text-5xl font-bold text-white mb-2 text-center md:text-left">Sign In</h2>
                             <p className="text-slate-400">
                                 Already have an account?{' '}
                                 <Link to="/register" className="text-blue-500 hover:text-blue-400 font-medium underline underline-offset-4">
