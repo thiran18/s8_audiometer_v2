@@ -17,11 +17,16 @@ export default function ForgotPassword() {
         setError(null)
 
         try {
+            console.log('Attempting password reset for:', email)
             const { error } = await resetPassword(email)
-            if (error) throw error
+            if (error) {
+                console.error('Supabase reset error:', error)
+                throw error
+            }
             setSubmitted(true)
         } catch (err) {
-            setError(err.message)
+            console.error('Catch block error:', err)
+            setError(err.message || "An unexpected error occurred. Please try again.")
         } finally {
             setLoading(false)
         }
