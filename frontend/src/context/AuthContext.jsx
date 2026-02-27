@@ -35,50 +35,41 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         let mounted = true;
+        // Track if initSession has already loaded the profile, to avoid double-fetch
+        let profileLoadedForId = null;
 
         // Check active sessions and sets the user
         const initSession = async () => {
-            console.log('Starting session initialization...')
             try {
-                // Safety timeout: forced loading false after 15 seconds to prevent infinite spinner
+                // Safety timeout: reduced to 5s for faster failure feedback
                 const timeoutPromise = new Promise((_, reject) =>
                     setTimeout(() => {
-                        console.warn('Session check timed out!')
-                        reject(new Error('Session check timeout: Mobile network may be slow.'))
-                    }, 15000)
+                        reject(new Error('Session check timeout: Network may be slow.'))
+                    }, 5000)
                 );
 
                 const sessionPromise = async () => {
-                    console.log('Fetching session from Supabase...')
                     const { data: { session }, error } = await supabase.auth.getSession();
-                    if (error) {
-                        console.error('Supabase getSession error:', error)
-                        throw error;
-                    }
-
-                    console.log('Session fetched:', session ? 'Active' : 'None')
+                    if (error) throw error;
 
                     if (mounted) {
                         setSession(session);
                         setUser(session?.user ?? null);
                         if (session?.user) {
-                            console.log('Fetching user profile for:', session.user.id)
+                            profileLoadedForId = session.user.id;
                             await refreshProfile(session.user.id);
                         }
                     }
                 };
 
-                // Race the session check against the timeout
                 await Promise.race([sessionPromise(), timeoutPromise]);
 
             } catch (error) {
-                console.error('Error in initSession:', error);
                 if (mounted) {
                     setInitError(error.message);
                 }
             } finally {
                 if (mounted) {
-                    console.log('Finalizing initialization, setting loading to false')
                     setLoading(false);
                 }
             }
@@ -86,14 +77,20 @@ export const AuthProvider = ({ children }) => {
 
         initSession();
 
-        // Listen for changes on auth state (logged in, signed out, etc.)
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        // Listen for auth state changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (!mounted) return;
 
             setSession(session);
             setUser(session?.user ?? null);
 
             if (session?.user) {
+                // Skip redundant DB fetch if initSession already loaded profile for this user
+                if (profileLoadedForId === session.user.id) {
+                    profileLoadedForId = null; // reset so future sign-ins still fetch
+                    setLoading(false);
+                    return;
+                }
                 await refreshProfile(session.user.id);
             } else {
                 setUserProfile(null);

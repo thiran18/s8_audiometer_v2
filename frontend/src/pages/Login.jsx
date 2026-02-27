@@ -68,7 +68,7 @@ export default function Login() {
         setLoading(true)
         setError(null)
 
-        const { error } = await signIn({
+        const { data, error } = await signIn({
             email: formData.email,
             password: formData.password
         })
@@ -78,7 +78,8 @@ export default function Login() {
             setLoading(false)
         } else {
             saveRecentAccount(formData.email, formData.password)
-            navigate('/home') // Will redirect based on role
+            // Navigate immediately — AuthContext will handle profile in background
+            navigate('/home', { replace: true })
         }
     }
 

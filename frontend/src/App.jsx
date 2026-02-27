@@ -24,7 +24,11 @@ import Layout from './components/Layout'
 function RoleBasedDashboardRedirect() {
   const { userProfile, loading } = useAuth()
 
-  if (loading) return null
+  if (loading) return (
+    <div className="h-screen flex items-center justify-center bg-[#0F111A]">
+      <div className="w-10 h-10 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+    </div>
+  )
 
   if (!userProfile) {
     return <Navigate to="/dashboard" replace />
