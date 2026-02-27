@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/useAuth'
-import { Lock, Mail, Activity, Eye, EyeOff } from 'lucide-react'
+import { Lock, Mail, Eye, EyeOff } from 'lucide-react'
 import authBg from '../assets/auth-bg.png'
 
 export default function Login() {
@@ -14,47 +14,6 @@ export default function Login() {
         password: ''
     })
     const [showPassword, setShowPassword] = useState(false)
-    const [recentAccounts, setRecentAccounts] = useState([])
-    const [showPicker, setShowPicker] = useState(false)
-    const pickerRef = useRef(null)
-
-    useEffect(() => {
-        const saved = localStorage.getItem('recent_logins')
-        if (saved) {
-            try {
-                setRecentAccounts(JSON.parse(saved))
-            } catch (e) {
-                console.error('Failed to parse recent logins')
-            }
-        }
-
-        const handleClickOutside = (event) => {
-            if (pickerRef.current && !pickerRef.current.contains(event.target)) {
-                setShowPicker(false)
-            }
-        }
-        document.addEventListener('mousedown', handleClickOutside)
-        return () => document.removeEventListener('mousedown', handleClickOutside)
-    }, [])
-
-    const handleRecentClick = (account) => {
-        setFormData({
-            email: account.email,
-            password: account.password
-        })
-        setShowPicker(false)
-    }
-
-    const saveRecentAccount = (email, password) => {
-        const saved = localStorage.getItem('recent_logins')
-        let accounts = saved ? JSON.parse(saved) : []
-
-        // Remove if exists to re-add to top
-        accounts = accounts.filter(acc => acc.email !== email)
-
-        accounts = [{ email, password }, ...accounts].slice(0, 5) // Keep last 5
-        localStorage.setItem('recent_logins', JSON.stringify(accounts))
-    }
 
     const handleChange = (e) => {
         setFormData({
@@ -77,7 +36,6 @@ export default function Login() {
             setError(error.message)
             setLoading(false)
         } else {
-            saveRecentAccount(formData.email, formData.password)
             // Navigate immediately — AuthContext will handle profile in background
             navigate('/home', { replace: true })
         }
@@ -124,9 +82,8 @@ export default function Login() {
                                 </div>
                             )}
 
-                            <div className="relative">
+                            <div>
                                 <label className="block text-sm font-medium text-slate-400 mb-2 px-1">Email address</label>
-
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-500 transition-colors">
                                         <Mail size={18} />
@@ -139,55 +96,10 @@ export default function Login() {
                                         autoComplete="email"
                                         value={formData.email}
                                         onChange={handleChange}
-                                        onFocus={() => recentAccounts.length > 0 && setShowPicker(true)}
                                         className="block w-full pl-12 pr-4 py-4 bg-[#252a3d] border border-slate-700/50 rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all font-medium"
                                         placeholder="Enter your email"
                                     />
                                 </div>
-
-                                {showPicker && recentAccounts.length > 0 && (
-                                    <div
-                                        ref={pickerRef}
-                                        className="absolute left-0 right-0 top-full mt-2 z-50 bg-[#1E212E] border border-slate-700/50 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden animate-slide-up"
-                                    >
-                                        <div className="p-3 border-b border-slate-800 flex items-center justify-between">
-                                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-1">Saved Accounts</span>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    localStorage.removeItem('recent_logins')
-                                                    setRecentAccounts([])
-                                                    setShowPicker(false)
-                                                }}
-                                                className="text-[10px] font-bold text-red-400/70 hover:text-red-400 px-2 py-1 rounded-lg hover:bg-red-500/10 transition-colors uppercase"
-                                            >
-                                                Clear
-                                            </button>
-                                        </div>
-                                        <div className="max-h-[280px] overflow-y-auto">
-                                            {recentAccounts.map((account) => (
-                                                <button
-                                                    key={account.email}
-                                                    type="button"
-                                                    onClick={() => handleRecentClick(account)}
-                                                    className="w-full flex items-center gap-3 p-4 hover:bg-[#252a3d] transition-colors group/item text-left border-b border-slate-800/50 last:border-0"
-                                                >
-                                                    <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-base group-hover/item:scale-105 transition-transform">
-                                                        {account.email[0].toUpperCase()}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-xs font-bold text-white truncate group-hover/item:text-blue-400 transition-colors">
-                                                            {account.email}
-                                                        </p>
-                                                        <p className="text-[10px] text-slate-500 tracking-widest">
-                                                            ••••••••
-                                                        </p>
-                                                    </div>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
                             </div>
 
                             <div>
