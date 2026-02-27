@@ -9,7 +9,7 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true)
     const [initError, setInitError] = useState(null)
 
-    // Fetch user profile from database
+    // Fetch user profile from database (always runs in background, never blocks UI)
     const refreshProfile = async (userId) => {
         if (!userId) {
             setUserProfile(null)
@@ -34,74 +34,65 @@ export const AuthProvider = ({ children }) => {
     }
 
     useEffect(() => {
-        let mounted = true;
-        // Track if initSession has already loaded the profile, to avoid double-fetch
-        let profileLoadedForId = null;
+        let mounted = true
 
-        // Check active sessions and sets the user
         const initSession = async () => {
             try {
-                // Safety timeout: reduced to 5s for faster failure feedback
+                // Reduced timeout to 2s — Supabase caches session in localStorage so this is usually instant
                 const timeoutPromise = new Promise((_, reject) =>
                     setTimeout(() => {
-                        reject(new Error('Session check timeout: Network may be slow.'))
-                    }, 5000)
-                );
+                        reject(new Error('Session check timeout'))
+                    }, 2000)
+                )
 
-                const sessionPromise = async () => {
-                    const { data: { session }, error } = await supabase.auth.getSession();
-                    if (error) throw error;
-
+                const sessionPromise = supabase.auth.getSession().then(({ data: { session }, error }) => {
+                    if (error) throw error
                     if (mounted) {
-                        setSession(session);
-                        setUser(session?.user ?? null);
+                        setSession(session)
+                        setUser(session?.user ?? null)
+                        // Fire profile fetch in background — don't await it
                         if (session?.user) {
-                            profileLoadedForId = session.user.id;
-                            await refreshProfile(session.user.id);
+                            refreshProfile(session.user.id)
                         }
                     }
-                };
+                })
 
-                await Promise.race([sessionPromise(), timeoutPromise]);
-
+                await Promise.race([sessionPromise, timeoutPromise])
             } catch (error) {
                 if (mounted) {
-                    setInitError(error.message);
+                    setInitError(error.message)
                 }
             } finally {
+                // Unblock the UI immediately — profile loads in background
                 if (mounted) {
-                    setLoading(false);
+                    setLoading(false)
                 }
             }
         }
 
-        initSession();
+        initSession()
 
         // Listen for auth state changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (!mounted) return;
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if (!mounted) return
 
-            setSession(session);
-            setUser(session?.user ?? null);
+            setSession(session)
+            setUser(session?.user ?? null)
 
             if (session?.user) {
-                // Skip redundant DB fetch if initSession already loaded profile for this user
-                if (profileLoadedForId === session.user.id) {
-                    profileLoadedForId = null; // reset so future sign-ins still fetch
-                    setLoading(false);
-                    return;
-                }
-                await refreshProfile(session.user.id);
+                // Fetch profile in background — don't await, don't block loading
+                refreshProfile(session.user.id)
             } else {
-                setUserProfile(null);
+                setUserProfile(null)
             }
 
-            setLoading(false);
-        });
+            // Unblock the UI right away
+            setLoading(false)
+        })
 
         return () => {
-            mounted = false;
-            subscription.unsubscribe();
+            mounted = false
+            subscription.unsubscribe()
         }
     }, [])
 
@@ -144,14 +135,14 @@ export const AuthProvider = ({ children }) => {
                             <div className="space-y-2">
                                 <p className="text-gray-800 font-semibold text-lg">Connection is taking longer than usual</p>
                                 <p className="text-gray-500 text-sm max-w-xs mx-auto">
-                                    This usually happens on slow mobile networks. Please check your internet connection and try again.
+                                    Please check your internet connection and try again.
                                 </p>
                             </div>
                             <button
                                 onClick={() => {
-                                    setInitError(null);
-                                    setLoading(true);
-                                    window.location.reload();
+                                    setInitError(null)
+                                    setLoading(true)
+                                    window.location.reload()
                                 }}
                                 className="mt-4 px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 active:scale-95 transition-all"
                             >
