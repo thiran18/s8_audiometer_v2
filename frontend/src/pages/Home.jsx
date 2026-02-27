@@ -17,8 +17,8 @@ export default function Home() {
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0F111A] via-transparent to-transparent opacity-60" />
                     <div className="absolute bottom-12 left-12 right-12 text-white">
                         <div className="flex items-center space-x-3 mb-6">
-                            <div className="p-3 bg-blue-600 rounded-2xl shadow-lg shadow-blue-500/20">
-                                <Activity size={32} />
+                            <div className="w-12 h-12">
+                                <img src="/newLOGO.png" alt="HearPulse Logo" className="w-full h-full object-contain" />
                             </div>
                             <h1 className="text-4xl font-bold tracking-tight">HearPulse</h1>
                         </div>
