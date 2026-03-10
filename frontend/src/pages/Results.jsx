@@ -643,6 +643,7 @@ export default function Results() {
                 <ReferralLetter
                     screening={screening}
                     patient={patient}
+                    grade={grade}
                     onClose={() => setShowReferral(false)}
                 />
             )}
@@ -661,8 +662,19 @@ const CustomCrossDot = (props) => {
     );
 };
 
-const ReferralLetter = ({ screening, patient, onClose }) => {
+const ReferralLetter = ({ screening, patient, grade, onClose }) => {
     const date = new Date().toLocaleDateString();
+
+    // Dynamic Clinical Priority
+    const getPriority = (gradeStr) => {
+        if (!gradeStr) return { label: "Routine Review", color: "text-slate-500" };
+        if (gradeStr.includes("Grade 0")) return { label: "Routine Monitoring", color: "text-green-500" };
+        if (gradeStr.includes("Grade 1") || gradeStr.includes("Grade 2")) return { label: "Follow-up Advised", color: "text-amber-500" };
+        return { label: "Urgent Review Advised", color: "text-red-500" };
+    };
+
+    const priority = getPriority(grade);
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm print:hidden">
             <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl max-w-2xl w-full p-8 space-y-6 overflow-y-auto max-h-[90vh] border border-slate-100 dark:border-slate-800 animate-in fade-in zoom-in duration-300">
@@ -686,7 +698,7 @@ const ReferralLetter = ({ screening, patient, onClose }) => {
                         <p className="text-sm leading-relaxed italic">
                             "To the ENT Specialist/Audiologist, <br /><br />
                             This patient was screened using the HearPulse digital audiometry platform.
-                            Results indicate <strong>{screening.classification || 'a hearing deficit'}</strong>
+                            Results indicate <strong>{grade || 'a hearing deficit'}</strong>
                             with a Pure Tone Average (PTA) in the better ear.
                             Further clinical investigation is recommended to determine the etiology and appropriate intervention."
                         </p>
@@ -695,11 +707,11 @@ const ReferralLetter = ({ screening, patient, onClose }) => {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="p-4 rounded-xl border border-slate-100 dark:border-slate-800">
                             <h4 className="text-[10px] font-bold uppercase text-slate-400 mb-1">Observation</h4>
-                            <p className="text-sm font-semibold">{screening.classification}</p>
+                            <p className="text-sm font-semibold">{grade}</p>
                         </div>
                         <div className="p-4 rounded-xl border border-slate-100 dark:border-slate-800">
                             <h4 className="text-[10px] font-bold uppercase text-slate-400 mb-1">Clinical Priority</h4>
-                            <p className="text-sm font-semibold text-red-500">Urgent Review Advised</p>
+                            <p className={`text-sm font-semibold ${priority.color}`}>{priority.label}</p>
                         </div>
                     </div>
                 </div>
