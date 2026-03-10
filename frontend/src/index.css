@@ -31,6 +31,35 @@
   /* Slate 700 */
 }
 
+.text-gradient {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.glow-primary {
+  box-shadow: 0 0 20px rgba(79, 70, 229, 0.15);
+}
+
+/* Scrollbar Refinement */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.4);
+}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;

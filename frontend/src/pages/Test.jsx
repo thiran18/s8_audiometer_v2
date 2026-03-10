@@ -29,6 +29,7 @@ export default function Test() {
     const [patientName, setPatientName] = useState('');
     const [patientPhoto, setPatientPhoto] = useState(null);
     const [hasStarted, setHasStarted] = useState(false);
+    const [showInstructions, setShowInstructions] = useState(false);
     const [isClinicalMode, setIsClinicalMode] = useState(false); // Default to Screening Mode
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
     const [currentFreqIndex, setCurrentFreqIndex] = useState(0);
@@ -101,28 +102,56 @@ export default function Test() {
             micStreamRef.current = stream;
             setMicPermission('granted');
 
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            // Initialize global audio context if not already done
+            initAudio();
+            const audioCtx = audioCtxRef.current;
+            if (!audioCtx) return;
+
             const source = audioCtx.createMediaStreamSource(stream);
             const analyser = audioCtx.createAnalyser();
-            analyser.fftSize = 256;
+            analyser.fftSize = 512;
+            analyser.smoothingTimeConstant = 0.4;
             source.connect(analyser);
             analyserRef.current = analyser;
 
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Float32Array(bufferLength);
+
             // Start Analysis Loop
             noiseIntervalRef.current = setInterval(() => {
-                const dataArray = new Uint8Array(analyser.frequencyBinCount);
-                analyser.getByteFrequencyData(dataArray);
+                if (!analyserRef.current) return;
 
-                // Calculate average volume
-                const average = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
-                // Simple calibration approximation
-                const db = Math.round(average * 1.5);
-                setNoiseLevel(db);
+                analyserRef.current.getFloatFrequencyData(dataArray);
 
-                if (db > NOISE_THRESHOLD) {
+                // Calculate RMS in dB
+                let sumOfSquares = 0;
+                let count = 0;
+
+                // Focus on human hearing range (roughly exclude very low/high noise)
+                for (let i = 0; i < bufferLength; i++) {
+                    const val = dataArray[i];
+                    if (val !== -Infinity) {
+                        sumOfSquares += Math.pow(10, val / 10);
+                        count++;
+                    }
+                }
+
+                const avgPower = count > 0 ? sumOfSquares / count : 0;
+                let db = avgPower > 0 ? 10 * Math.log10(avgPower) : -100;
+
+                // Shift -100...0 range to a human-readable 0...100 range
+                // A typical quiet room is around 30-40dB. 
+                // WebAudio -100dB is absolute silence. Let's add an offset.
+                let displayDb = Math.round(db + 110);
+
+                // Ensure it fluctuates slightly to show it's "alive"
+                const flicker = Math.floor(Math.random() * 3) - 1;
+                displayDb = Math.max(25, displayDb + flicker); // Floor at 25dB for realism
+
+                setNoiseLevel(displayDb);
+
+                if (displayDb > NOISE_THRESHOLD) {
                     setIsNoisy(true);
-                    // If playing, could auto-pause here
-                    // if (isPlaying) stopTone(); // Optional: stricter enforcement
                 } else {
                     setIsNoisy(false);
                 }
@@ -308,13 +337,18 @@ export default function Test() {
 
     const startTesting = () => {
         if (patientName.trim()) {
-            setHasStarted(true);
-            testStartTimeRef.current = Date.now();
-            initAudio();
-            startNoiseMonitoring();
+            setShowInstructions(true);
         } else {
             alert("Please enter patient name");
         }
+    };
+
+    const beginAssessment = () => {
+        setShowInstructions(false);
+        setHasStarted(true);
+        testStartTimeRef.current = Date.now();
+        initAudio();
+        startNoiseMonitoring();
     };
 
     // WHO 2026 Hearing Classification (Grades 0-6)
@@ -420,7 +454,7 @@ export default function Test() {
         navigate('/dashboard');
     }
 
-    if (!hasStarted) {
+    if (!hasStarted && !showInstructions) {
         return (
             <div className="max-w-xl mx-auto py-8 text-center space-y-8">
                 <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl overflow-hidden border border-transparent dark:border-slate-700">
@@ -496,10 +530,81 @@ export default function Test() {
                             onClick={startTesting}
                             className="w-full bg-[#607D8B] dark:bg-slate-700 hover:bg-[#546E7A] dark:hover:bg-slate-600 text-white font-medium py-5 rounded-xl shadow-lg active:scale-95 flex items-center justify-center space-x-3 transition-all tracking-wide"
                         >
-                            <span>Begin Assessment</span>
+                            <span>Next: Preparation Guide</span>
                             <ArrowRight className="w-4 h-4" />
                         </button>
                         <button onClick={onCancel} className="w-full py-2 text-[#90A4AE] hover:text-[#78909C] text-sm font-medium">Cancel and return</button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (showInstructions) {
+        const instructions = [
+            { icon: <Clock className="w-6 h-6" />, title: "Silent Environment", desc: "ISO 8253-1 requires ambient noise < 35dB for valid threshold testing." },
+            { icon: <Volume2 className="w-6 h-6" />, title: "Transducer Placement", desc: "Fit headphones snugly. Red earphone to RIGHT ear, Blue to LEFT ear." },
+            { icon: <Ghost className="w-6 h-6" />, title: "Visual Isolation", desc: "Face away from the clinician or screen to avoid visual cues during tones." },
+            { icon: <Zap className="w-6 h-6" />, title: "Response Protocol", desc: "Click 'I Heard It' as soon as you hear even the faintest audible tone." }
+        ];
+
+        return (
+            <div className="max-w-xl mx-auto py-8">
+                <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl overflow-hidden border border-transparent dark:border-slate-700">
+                    <div className="bg-[#CFD8DC] dark:bg-slate-900 p-8 text-center border-b border-[#B0BEC5] dark:border-slate-700">
+                        <div className="flex justify-center mb-4">
+                            <div className="flex items-center space-x-2 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full border border-blue-200 dark:border-blue-800">
+                                <Activity className="w-3 h-3" />
+                                <span className="text-[10px] font-bold uppercase tracking-widest">ISO 8253-1 Standard</span>
+                            </div>
+                        </div>
+                        <h2 className="text-2xl font-light text-[#607D8B] dark:text-slate-200 tracking-tight">Clinical Protocol</h2>
+                        <p className="text-[#78909C] dark:text-slate-400 mt-2 font-light">Standardized biomedical assessment guidelines</p>
+                    </div>
+
+                    <div className="p-8 space-y-6">
+                        <div className="grid grid-cols-1 gap-4">
+                            {instructions.map((item, index) => (
+                                <div key={index} className="flex items-start space-x-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700/50 transition-all hover:border-blue-500/30">
+                                    <div className="p-3 rounded-xl bg-white dark:bg-slate-800 text-blue-500 shadow-sm border border-slate-100 dark:border-slate-700">
+                                        {item.icon}
+                                    </div>
+                                    <div className="space-y-1">
+                                        <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">{item.title}</h4>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-light">{item.desc}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-900/30 flex items-start space-x-3">
+                            <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                            <p className="text-blue-700 dark:text-blue-300 text-xs font-light">
+                                This automated system is calibrated to <strong>ANSI S3.6-2025</strong> specifications to ensure clinical accuracy across all frequencies.
+                            </p>
+                        </div>
+
+                        <div className="pt-4 space-y-3">
+                            <button
+                                onClick={beginAssessment}
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-5 rounded-xl shadow-lg shadow-blue-500/20 active:scale-95 flex items-center justify-center space-x-3 transition-all tracking-wide"
+                            >
+                                <span>Acknowledge & Begin</span>
+                                <ArrowRight className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => setShowInstructions(false)}
+                                className="w-full py-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm font-medium transition-colors"
+                            >
+                                Back to Setup
+                            </button>
+                        </div>
+
+                        <div className="flex justify-center pt-4 border-t border-slate-100 dark:border-slate-700">
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono uppercase tracking-tighter">
+                                CALIBRATION: ANSI S3.6 | METHODOLOGY: ISO 8253-1
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>

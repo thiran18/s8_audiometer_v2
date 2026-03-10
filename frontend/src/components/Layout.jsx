@@ -169,7 +169,7 @@ export default function Layout() {
                                     </div>
                                     <button
                                         onClick={handleSignOut}
-                                        className="flex items-center space-x-4 p-4 w-full text-red-600 dark:text-red-400 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                        className="flex items-center space-x-4 p-4 w-full text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                                     >
                                         <LogOut className="w-6 h-6" />
                                         <span className="text-lg font-bold">Sign Out</span>

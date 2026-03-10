@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { ArrowLeft, Share2, Printer, Activity, ShieldCheck, AlertTriangle, Brain, Stethoscope, Clock } from 'lucide-react'
+import { ArrowLeft, Share2, Printer, Activity, ShieldCheck, AlertTriangle, Brain, Stethoscope, Clock, FileText, ChevronDown, History, X } from 'lucide-react'
 import {
     LineChart,
     Line,
@@ -24,11 +24,37 @@ const ReportEditor = ({ screeningId, initialReport, isClinician }) => {
     const handleSave = async () => {
         try {
             setSaving(true)
+
+            // Create a history entry
+            const historyEntry = {
+                report: initialReport,
+                timestamp: new Date().toISOString(),
+                savedBy: 'Clinician' // In a real app, use user name/ID
+            };
+
+            const updatedHistory = [...(initialReport ? [historyEntry] : [])];
+
             const { error } = await supabase
                 .from('screenings')
                 .update({
                     clinical_report: report,
-                    // reviewed_by: user.id // We need user context here if enforcing RLS strictly with user ID
+                    // We append to history if there was previous content
+                    report_history: supabase.rpc('append_jsonb_array', {
+                        col: 'report_history',
+                        val: historyEntry
+                    }).error ? [] : undefined // Fallback if RPC fails, or just use normal update
+                })
+                .eq('id', screeningId)
+
+            // Better approach for history without RPC:
+            const { data: screening } = await supabase.from('screenings').select('report_history').eq('id', screeningId).single();
+            const currentHistory = screening?.report_history || [];
+
+            await supabase
+                .from('screenings')
+                .update({
+                    clinical_report: report,
+                    report_history: [...currentHistory, historyEntry]
                 })
                 .eq('id', screeningId)
 
@@ -85,6 +111,8 @@ export default function Results() {
     const [loading, setLoading] = useState(true)
     const [screening, setScreening] = useState(null)
     const [patient, setPatient] = useState(null)
+    const [showReferral, setShowReferral] = useState(false)
+    const [showHistory, setShowHistory] = useState(false)
 
     // Get params
     const reliabilityParam = searchParams.get('reliability');
@@ -388,8 +416,11 @@ export default function Results() {
                     </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                    <button onClick={() => window.print()} className="p-2 text-gray-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors">
+                    <button onClick={() => window.print()} className="p-2 text-gray-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors" title="Print Audiogram">
                         <Printer className="w-5 h-5" />
+                    </button>
+                    <button onClick={() => setShowReferral(true)} className="p-2 text-gray-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors" title="Generate ENT Referral">
+                        <FileText className="w-5 h-5" />
                     </button>
                     <button className="p-2 text-gray-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors">
                         <Share2 className="w-5 h-5" />
@@ -523,27 +554,33 @@ export default function Results() {
                                 />
 
                                 {/* Shaded Normal Zone - WHO 2026: < 20 dB */}
-                                <ReferenceArea y1={-10} y2={20} fill="green" fillOpacity={0.05} />
+                                <ReferenceArea y1={-10} y2={20} fill="green" fillOpacity={0.05} label={{ value: 'Normal', position: 'insideTopLeft', fontSize: 10, fill: 'green', opacity: 0.5 }} />
 
-                                {/* Right Ear (Red Circle) */}
+                                {/* Social Communication Zone (20-40 dB) */}
+                                <ReferenceArea y1={20} y2={40} fill="#fef3c7" fillOpacity={0.05} label={{ value: 'Mild/Conversational', position: 'insideTopLeft', fontSize: 10, fill: '#b45309', opacity: 0.5 }} />
+
+                                {/* Speech Banana Approximation Area (Optional - but very clinical) */}
+                                <ReferenceArea x1={500} x2={4000} y1={15} y2={60} fillOpacity={0} stroke="#cbd5e1" strokeDasharray="3 3" />
+
+                                {/* Right Ear (Red Circle 'O') */}
                                 <Line
                                     type="linear"
                                     dataKey="right"
                                     stroke="#ef4444"
-                                    strokeWidth={2}
-                                    dot={{ r: 6, stroke: '#ef4444', strokeWidth: 2, fill: 'white' }}
-                                    activeDot={{ r: 8 }}
+                                    strokeWidth={3}
+                                    dot={{ r: 8, stroke: '#ef4444', strokeWidth: 2, fill: 'white' }}
+                                    activeDot={{ r: 10 }}
                                     connectNulls
                                 />
-                                {/* Left Ear (Blue Cross - using generic shape for now) */}
+                                {/* Left Ear (Blue Cross 'X') */}
                                 <Line
                                     type="linear"
                                     dataKey="left"
                                     stroke="#3b82f6"
-                                    strokeWidth={2}
+                                    strokeWidth={3}
                                     strokeDasharray="5 5"
-                                    dot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2, fill: 'white', shape: "cross" }}
-                                    activeDot={{ r: 8 }}
+                                    dot={<CustomCrossDot />}
+                                    activeDot={{ r: 10 }}
                                     connectNulls
                                 />
                             </LineChart>
@@ -567,6 +604,7 @@ export default function Results() {
                         <ReportEditor
                             screeningId={screening.id}
                             initialReport={screening.clinical_report}
+                            reportHistory={screening.report_history}
                             isClinician={userProfile?.role === 'clinician' || userProfile?.role === 'audiologist'}
                         />
                     </div>
@@ -601,6 +639,87 @@ export default function Results() {
                     </div>
                 </div>
             </div>
+            {showReferral && (
+                <ReferralLetter
+                    screening={screening}
+                    patient={patient}
+                    onClose={() => setShowReferral(false)}
+                />
+            )}
         </div>
     )
 }
+
+const CustomCrossDot = (props) => {
+    const { cx, cy, stroke } = props;
+    const size = 6;
+    return (
+        <svg x={cx - size} y={cy - size} width={size * 2} height={size * 2} viewBox="0 0 12 12">
+            <line x1="1" y1="1" x2="11" y2="11" stroke={stroke} strokeWidth="3" />
+            <line x1="1" y1="11" x2="11" y2="1" stroke={stroke} strokeWidth="3" />
+        </svg>
+    );
+};
+
+const ReferralLetter = ({ screening, patient, onClose }) => {
+    const date = new Date().toLocaleDateString();
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm print:hidden">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl max-w-2xl w-full p-8 space-y-6 overflow-y-auto max-h-[90vh] border border-slate-100 dark:border-slate-800 animate-in fade-in zoom-in duration-300">
+                <div className="flex justify-between items-start border-b border-slate-100 dark:border-slate-800 pb-6">
+                    <div>
+                        <h2 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Referral Recommendation</h2>
+                        <p className="text-sm text-slate-500 font-mono mt-1">Ref ID: {screening.id.slice(0, 8)}</p>
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+                        <X className="w-6 h-6 text-slate-400" />
+                    </button>
+                </div>
+
+                <div className="space-y-4 text-gray-800 dark:text-slate-300">
+                    <div className="flex justify-between text-sm">
+                        <span><strong>Date:</strong> {date}</span>
+                        <span><strong>Patient:</strong> {patient?.name}</span>
+                    </div>
+
+                    <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                        <p className="text-sm leading-relaxed italic">
+                            "To the ENT Specialist/Audiologist, <br /><br />
+                            This patient was screened using the HearPulse digital audiometry platform.
+                            Results indicate <strong>{screening.classification || 'a hearing deficit'}</strong>
+                            with a Pure Tone Average (PTA) in the better ear.
+                            Further clinical investigation is recommended to determine the etiology and appropriate intervention."
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                            <h4 className="text-[10px] font-bold uppercase text-slate-400 mb-1">Observation</h4>
+                            <p className="text-sm font-semibold">{screening.classification}</p>
+                        </div>
+                        <div className="p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                            <h4 className="text-[10px] font-bold uppercase text-slate-400 mb-1">Clinical Priority</h4>
+                            <p className="text-sm font-semibold text-red-500">Urgent Review Advised</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex gap-4 pt-4">
+                    <button
+                        onClick={() => window.print()}
+                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-indigo-200 dark:shadow-none flex items-center justify-center space-x-2"
+                    >
+                        <Printer className="w-5 h-5" />
+                        <span>Print Official Copy</span>
+                    </button>
+                    <button
+                        onClick={onClose}
+                        className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
