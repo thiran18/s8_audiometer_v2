@@ -141,7 +141,7 @@ export default function Settings() {
                     <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none p-6 border border-slate-100 dark:border-slate-700">
                         <h3 className="text-sm font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-4 px-2">Quick Stats</h3>
                         <div className="space-y-4">
-                            <div className="flex items-center justify-between px-2">
+                            <div className="flex items-center justify-between px-2 flex-wrap gap-2">
                                 <div className="flex items-center space-x-3 text-gray-600 dark:text-slate-400">
                                     <Calendar size={18} className="text-blue-500" />
                                     <span className="text-sm">Joined</span>
@@ -150,7 +150,7 @@ export default function Settings() {
                                     {userProfile?.created_at ? new Date(userProfile.created_at).toLocaleDateString() : 'N/A'}
                                 </span>
                             </div>
-                            <div className="flex items-center justify-between px-2">
+                            <div className="flex items-center justify-between px-2 flex-wrap gap-2">
                                 <div className="flex items-center space-x-3 text-gray-600 dark:text-slate-400">
                                     <Shield size={18} className="text-green-500" />
                                     <span className="text-sm">Status</span>
@@ -180,13 +180,13 @@ export default function Settings() {
                             <h3 className="text-xl font-bold text-gray-900 dark:text-white">Personal Information</h3>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div className="space-y-1">
                                 <p className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest flex items-center space-x-2">
                                     <Mail size={12} />
                                     <span>Email Address</span>
                                 </p>
-                                <p className="text-gray-900 dark:text-white font-medium">{userProfile?.email}</p>
+                                <p className="text-gray-900 dark:text-white font-medium break-all">{userProfile?.email}</p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest flex items-center space-x-2">
