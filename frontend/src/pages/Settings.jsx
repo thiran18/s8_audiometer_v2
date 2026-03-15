@@ -180,7 +180,7 @@ export default function Settings() {
                             <h3 className="text-xl font-bold text-gray-900 dark:text-white">Personal Information</h3>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="flex flex-col md:grid md:grid-cols-2 gap-6 md:gap-8">
                             <div className="space-y-1">
                                 <p className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest flex items-center space-x-2">
                                     <Mail size={12} />
@@ -203,7 +203,6 @@ export default function Settings() {
                                     </p>
                                     <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                         <span className="text-gray-900 dark:text-white font-bold break-words">{userProfile?.school_name || 'Not specified'}</span>
-                                        <span className="text-[10px] px-2 py-1 bg-white dark:bg-slate-800 rounded-lg shadow-sm text-gray-400 dark:text-slate-500 self-start sm:self-center">Verified</span>
                                     </div>
                                 </div>
                             )}
