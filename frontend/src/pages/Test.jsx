@@ -190,7 +190,14 @@ export default function Test() {
 
         stopTone();
 
-        const gainValue = Math.pow(10, (db - 100) / 20); // Calibration: using 100dB as max (similar to user's scale, adjusted for web safety)
+        // ISO 389-1 standard RETSPL offsets (approximate) to compensate for human hearing sensitivity
+        // Human ears are naturally less sensitive to low frequencies (like 250Hz), requiring more energy
+        const RETSPL_OFFSETS = { 250: 18.5, 500: 4.5, 1000: 0, 2000: 2.5, 4000: 2.5, 8000: 6.0 };
+        const offset = RETSPL_OFFSETS[freq] || 0;
+
+        // Keep the exact mathematical logic, but apply the frequency offset and use 80dB as reference
+        const compensatedDb = db + offset;
+        const gainValue = Math.pow(10, (compensatedDb - 80) / 20);
         const osc = audioCtxRef.current.createOscillator();
         const gain = audioCtxRef.current.createGain();
         const panner = audioCtxRef.current.createStereoPanner();

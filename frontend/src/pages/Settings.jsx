@@ -196,14 +196,14 @@ export default function Settings() {
                                 <p className="text-gray-900 dark:text-white font-medium capitalize">{userProfile?.role}</p>
                             </div>
                             {isTeacher && (
-                                <div className="col-span-2 space-y-1">
+                                <div className="md:col-span-2 space-y-1">
                                     <p className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest flex items-center space-x-2">
                                         <School size={12} />
                                         <span>Institution Name</span>
                                     </p>
-                                    <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                                        <span className="text-gray-900 dark:text-white font-bold">{userProfile?.school_name || 'Not specified'}</span>
-                                        <span className="text-[10px] px-2 py-1 bg-white dark:bg-slate-800 rounded-lg shadow-sm text-gray-400 dark:text-slate-500">Verified</span>
+                                    <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                        <span className="text-gray-900 dark:text-white font-bold break-words">{userProfile?.school_name || 'Not specified'}</span>
+                                        <span className="text-[10px] px-2 py-1 bg-white dark:bg-slate-800 rounded-lg shadow-sm text-gray-400 dark:text-slate-500 self-start sm:self-center">Verified</span>
                                     </div>
                                 </div>
                             )}

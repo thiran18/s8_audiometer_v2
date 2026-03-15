@@ -46,12 +46,14 @@ export function useAudio() {
         // In a real device, this needs specific calibration per frequency/headphone
         // Standard reference is 0 dB HL = ~SPL threshold. 
         // We use a simplified log scale for web safety. 
-        // Max comfortable volume usually around 1.0 gain.
-        // 0 dB HL -> 0.001 gain, 100 dB HL -> 1.0 gain (very loud!)
+        // Human ears are naturally less sensitive to low frequencies (like 250Hz), requiring more energy
+        const RETSPL_OFFSETS = { 250: 18.5, 500: 4.5, 1000: 0, 2000: 2.5, 4000: 2.5, 8000: 6.0 };
+        const offset = RETSPL_OFFSETS[frequency] || 0;
+
         // Formula: gain = 10 ^ ((db - MaxdB) / 20)
-        // Let's map 100dB HL to 0dB FS (Full Scale) = 1.0
-        // db - 100
-        const gainValue = Math.pow(10, (db - 100) / 20);
+        // Let's map 80dB HL to 0dB FS (Full Scale) = 1.0 to increase baseline volume
+        const compensatedDb = db + offset;
+        const gainValue = Math.pow(10, (compensatedDb - 80) / 20);
 
         // 2. Create Nodes
         const osc = ctx.createOscillator();

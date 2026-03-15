@@ -4,7 +4,11 @@ import { supabase } from '../lib/supabase'
 import { Plus, Search, User, FileText, ChevronRight, Eye, Trash2, X, School, BookOpen, Camera } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/useAuth'
-import Loading from '../components/ui/Loading'
+import toast from 'react-hot-toast'
+import { ConfirmModal } from '../components/ui/ConfirmModal'
+import { Skeleton } from '../components/ui/Skeleton'
+import { EmptyState } from '../components/ui/EmptyState'
+import { Users } from 'lucide-react'
 
 export default function Patients() {
     const { user, userProfile } = useAuth()
@@ -19,6 +23,14 @@ export default function Patients() {
     const [editMode, setEditMode] = useState(false)
     const [updating, setUpdating] = useState(false)
     const [uploadingPhoto, setUploadingPhoto] = useState(false)
+    const [confirmModalState, setConfirmModalState] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => {},
+        confirmText: 'Confirm',
+        isDestructive: true
+    })
 
     // New Patient Form
     const [newPatient, setNewPatient] = useState({
@@ -67,9 +79,28 @@ export default function Patients() {
             );
 
             if (isDuplicate) {
-                const confirm = window.confirm(`Patient "${newPatient.name}" may already exist. Create anyway?`);
-                if (!confirm) return;
+                setConfirmModalState({
+                    isOpen: true,
+                    title: 'Possible Duplicate',
+                    message: `Patient "${newPatient.name}" may already exist. Create anyway?`,
+                    confirmText: 'Create Anyway',
+                    isDestructive: false,
+                    onConfirm: () => {
+                        setConfirmModalState(prev => ({ ...prev, isOpen: false }));
+                        proceedWithCreatePatient();
+                    }
+                });
+                return;
             }
+
+            await proceedWithCreatePatient();
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }
+
+    const proceedWithCreatePatient = async () => {
+        try {
 
             const { data: { user } } = await supabase.auth.getUser()
 
@@ -87,9 +118,10 @@ export default function Patients() {
 
             setShowAddModal(false)
             setNewPatient({ name: '', age: '', gender: 'Male', notes: '' })
+            toast.success('Patient created successfully!')
             fetchPatients() // Refresh list
         } catch (error) {
-            alert(error.message)
+            toast.error(error.message)
         }
     }
 
@@ -110,9 +142,10 @@ export default function Patients() {
             if (error) throw error
 
             setEditMode(false)
+            toast.success('Patient updated successfully!')
             fetchPatients() // Refresh list
         } catch (error) {
-            alert('Error updating patient: ' + error.message)
+            toast.error('Error updating patient: ' + error.message)
         } finally {
             setUpdating(false)
         }
@@ -125,7 +158,7 @@ export default function Patients() {
 
         // Basic size check (max 2MB)
         if (file.size > 2 * 1024 * 1024) {
-            alert('File is too large. Please select an image under 2MB.')
+            toast.error('File is too large. Please select an image under 2MB.')
             return
         }
 
@@ -178,19 +211,32 @@ export default function Patients() {
                 setSelectedPatient({ ...selectedPatient, avatar_url: publicUrl })
             }
             fetchPatients()
+            toast.success('Photo uploaded successfully!')
             console.log('--- Photo Upload Finished ---')
         } catch (error) {
             console.error('Final Catch Error:', error)
-            alert('Error: ' + (error.error_description || error.message || 'Check browser console for details'))
+            toast.error('Error: ' + (error.error_description || error.message || 'Check browser console for details'))
         } finally {
             setUploadingPhoto(false)
         }
     }
 
+    const requestRemovePhoto = (patientId) => {
+        setConfirmModalState({
+            isOpen: true,
+            title: 'Remove Photo',
+            message: 'Are you sure you want to remove this photo and use initials instead?',
+            confirmText: 'Remove',
+            isDestructive: true,
+            onConfirm: () => {
+                setConfirmModalState(prev => ({ ...prev, isOpen: false }));
+                handleRemovePhoto(patientId);
+            }
+        });
+    }
+
     const handleRemovePhoto = async (patientId) => {
         if (!isTeacher) return
-        if (!window.confirm('Are you sure you want to remove this photo and use initials instead?')) return
-
         try {
             setUploadingPhoto(true)
             const { error } = await supabase
@@ -204,8 +250,9 @@ export default function Patients() {
                 setSelectedPatient({ ...selectedPatient, avatar_url: null })
             }
             fetchPatients()
+            toast.success('Photo removed.')
         } catch (error) {
-            alert('Error removing photo: ' + error.message)
+            toast.error('Error removing photo: ' + error.message)
         } finally {
             setUploadingPhoto(false)
         }
@@ -228,9 +275,21 @@ export default function Patients() {
         )
     }
 
-    const handleDeletePatient = async (id, name) => {
-        if (!window.confirm(`Are you sure you want to delete patient "${name}"? This will also delete all their screenings.`)) return
+    const requestDeletePatient = (id, name) => {
+        setConfirmModalState({
+            isOpen: true,
+            title: 'Delete Patient',
+            message: `Are you sure you want to delete patient "${name}"? This will also delete all their screenings.`,
+            confirmText: 'Delete',
+            isDestructive: true,
+            onConfirm: () => {
+                setConfirmModalState(prev => ({ ...prev, isOpen: false }));
+                handleDeletePatient(id);
+            }
+        });
+    }
 
+    const handleDeletePatient = async (id) => {
         try {
             const { error } = await supabase
                 .from('patients')
@@ -239,9 +298,10 @@ export default function Patients() {
 
             if (error) throw error
 
+            toast.success('Patient deleted.')
             fetchPatients()
         } catch (error) {
-            alert('Error deleting patient: ' + error.message)
+            toast.error('Error deleting patient: ' + error.message)
         }
     }
 
@@ -249,8 +309,6 @@ export default function Patients() {
         p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (p.notes && p.notes.toLowerCase().includes(searchTerm.toLowerCase()))
     )
-
-    if (loading) return <div className="h-screen flex items-center justify-center"><Loading /></div>
 
     return (
         <div className="space-y-6">
@@ -282,73 +340,99 @@ export default function Patients() {
             </div>
 
             {/* List */}
-            <div className="bg-white dark:bg-slate-800 shadow dark:shadow-none overflow-hidden sm:rounded-md border border-transparent dark:border-slate-700">
-                {error && (
-                    <div className="p-4 bg-red-50 text-red-700 border-l-4 border-red-500">
-                        <p className="font-bold">Error loading patients</p>
-                        <p>{error}</p>
-                        <p className="text-sm mt-1">If this says "Column does not exist", please run the <code>migrations_add_pid.sql</code> in Supabase.</p>
-                    </div>
-                )}
-                <ul className="divide-y divide-gray-200 dark:divide-slate-700">
-                    {filteredPatients.map((patient) => (
-                        <li key={patient.id}>
-                            <div className="hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors px-4 py-4 sm:px-6">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
-                                    <div className="flex items-center min-w-0">
-                                        <div className="flex-shrink-0 w-11 h-11 border-2 border-blue-500/10 rounded-full overflow-hidden bg-white dark:bg-slate-900">
-                                            {renderAvatar(patient)}
-                                        </div>
-                                        <div className="ml-4 min-w-0 flex-1">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <p className="text-sm font-bold text-gray-900 dark:text-white truncate max-w-[150px] sm:max-w-none">
-                                                    {patient.name}
-                                                </p>
-                                                <span className="text-[10px] text-gray-400 dark:text-slate-500 font-mono bg-gray-100 dark:bg-slate-900 px-1.5 py-0.5 rounded shrink-0 border border-transparent dark:border-slate-800">
-                                                    {patient.pid || 'No PID'}
-                                                </span>
-                                            </div>
-                                            <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
-                                                {patient.age ? `${patient.age}y` : 'Age N/A'} • {patient.gender}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-between sm:justify-end gap-2 pl-14 sm:pl-0">
-                                        <div className="flex items-center gap-1">
-                                            <button
-                                                onClick={() => setSelectedPatient(patient)}
-                                                className="p-2 text-gray-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                                                title="View Details"
-                                            >
-                                                <Eye size={20} />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeletePatient(patient.id, patient.name)}
-                                                className="p-2 text-gray-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                                                title="Delete Patient"
-                                            >
-                                                <Trash2 size={20} />
-                                            </button>
-                                        </div>
-                                        <Link
-                                            to={`/test?patientId=${patient.id}`}
-                                            className="px-4 py-2 bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-xl text-xs font-bold hover:bg-green-200 dark:hover:bg-green-900/40 transition-colors"
-                                        >
-                                            Test Now
-                                        </Link>
-                                    </div>
+            {loading ? (
+                <div className="bg-white dark:bg-slate-800 shadow dark:shadow-none sm:rounded-md border border-transparent dark:border-slate-700 divide-y divide-gray-200 dark:divide-slate-700 mt-4">
+                    {[...Array(5)].map((_, i) => (
+                        <div key={i} className="px-4 py-4 sm:px-6 flex items-center justify-between pointer-events-none">
+                            <div className="flex items-center gap-4 w-full">
+                                <Skeleton className="w-11 h-11 rounded-full shrink-0" />
+                                <div className="space-y-2 w-full max-w-[200px]">
+                                    <Skeleton className="h-4 w-full" />
+                                    <Skeleton className="h-3 w-2/3" />
                                 </div>
                             </div>
-                        </li>
+                            <div className="hidden sm:flex items-center gap-2">
+                                <Skeleton className="w-8 h-8 rounded-lg" />
+                                <Skeleton className="w-8 h-8 rounded-lg" />
+                                <Skeleton className="w-20 h-8 rounded-xl" />
+                            </div>
+                        </div>
                     ))}
-                    {filteredPatients.length === 0 && (
-                        <li className="px-4 py-8 text-center text-gray-500 dark:text-slate-500">
-                            No patients found. Add a new student to get started.
-                        </li>
+                </div>
+            ) : filteredPatients.length === 0 ? (
+                <div className="mt-4">
+                    <EmptyState 
+                        icon={Users}
+                        title={isTeacher ? "No students found" : "No patients found"}
+                        description={searchTerm ? "We couldn't find any matches for your search. Try different keywords." : (isTeacher ? "Get started by adding your first student to the roster." : "Get started by adding a new patient profile.")}
+                        actionLabel={searchTerm ? "Clear Search" : (isTeacher ? "Add Student" : "Add Patient")}
+                        onAction={searchTerm ? () => setSearchTerm('') : () => setShowAddModal(true)}
+                    />
+                </div>
+            ) : (
+                <div className="bg-white dark:bg-slate-800 shadow dark:shadow-none overflow-hidden sm:rounded-md border border-transparent dark:border-slate-700">
+                    {error && (
+                        <div className="p-4 bg-red-50 text-red-700 border-l-4 border-red-500">
+                            <p className="font-bold">Error loading patients</p>
+                            <p>{error}</p>
+                            <p className="text-sm mt-1">If this says "Column does not exist", please run the <code>migrations_add_pid.sql</code> in Supabase.</p>
+                        </div>
                     )}
-                </ul>
-            </div>
+                    <ul className="divide-y divide-gray-200 dark:divide-slate-700">
+                        {filteredPatients.map((patient, index) => (
+                            <li key={patient.id} className={`animate-fade-in-up stagger-${Math.min(index + 1, 7)} opacity-0`} style={{ animationFillMode: 'forwards' }}>
+                                <div className="hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors px-4 py-4 sm:px-6">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
+                                        <div className="flex items-center min-w-0">
+                                            <div className="flex-shrink-0 w-11 h-11 border-2 border-blue-500/10 rounded-full overflow-hidden bg-white dark:bg-slate-900 shadow-sm border-blue-100 dark:border-blue-900/30">
+                                                {renderAvatar(patient)}
+                                            </div>
+                                            <div className="ml-4 min-w-0 flex-1">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <p className="text-sm font-bold text-gray-900 dark:text-white truncate max-w-[150px] sm:max-w-none">
+                                                        {patient.name}
+                                                    </p>
+                                                    <span className="text-[10px] text-gray-500 dark:text-slate-400 font-mono bg-gray-100 dark:bg-slate-900 px-1.5 py-0.5 rounded shrink-0 border border-gray-200 dark:border-slate-800">
+                                                        {patient.pid || 'No PID'}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+                                                    {patient.age ? `${patient.age}y` : 'Age N/A'} • {patient.gender}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between sm:justify-end gap-2 pl-14 sm:pl-0">
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    onClick={() => setSelectedPatient(patient)}
+                                                    className="p-2 text-gray-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                                                    title="View Details"
+                                                >
+                                                    <Eye size={20} />
+                                                </button>
+                                                <button
+                                                    onClick={() => requestDeletePatient(patient.id, patient.name)}
+                                                    className="p-2 text-gray-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                                                    title="Delete Patient"
+                                                >
+                                                    <Trash2 size={20} />
+                                                </button>
+                                            </div>
+                                            <Link
+                                                to={`/test?patientId=${patient.id}`}
+                                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors shadow-sm active:scale-95"
+                                            >
+                                                Test Now
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
 
             {/* Add Patient Modal */}
             {showAddModal && (
@@ -464,7 +548,7 @@ export default function Patients() {
                             {/* Remove Photo Button - Only if avatar exists and is teacher */}
                             {isTeacher && selectedPatient.avatar_url && (
                                 <button
-                                    onClick={() => handleRemovePhoto(selectedPatient.id)}
+                                    onClick={() => requestRemovePhoto(selectedPatient.id)}
                                     className="text-xs font-bold text-red-500 hover:text-red-600 transition-colors flex items-center gap-1"
                                 >
                                     <Trash2 size={12} />
@@ -539,20 +623,6 @@ export default function Patients() {
                                     )}
                                 </div>
 
-                                <div className="col-span-2">
-                                    <p className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-1">Notes</p>
-                                    {editMode ? (
-                                        <textarea
-                                            className="w-full px-3 py-2 border dark:border-slate-700 rounded-lg text-sm min-h-[100px] bg-white dark:bg-slate-900 text-gray-900 dark:text-white"
-                                            value={selectedPatient.notes || ''}
-                                            onChange={e => setSelectedPatient({ ...selectedPatient, notes: e.target.value })}
-                                        />
-                                    ) : (
-                                        <p className="text-sm text-gray-600 dark:text-slate-300 italic font-medium bg-gray-50 dark:bg-slate-900/50 p-3 rounded-xl border border-dashed border-gray-200 dark:border-slate-700">
-                                            {selectedPatient.notes || 'No notes available.'}
-                                        </p>
-                                    )}
-                                </div>
 
                                 <div className="col-span-2">
                                     <p className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-1">Institution Name</p>
@@ -582,6 +652,10 @@ export default function Patients() {
                 </div>
             )}
 
+            <ConfirmModal 
+                {...confirmModalState} 
+                onCancel={() => setConfirmModalState(prev => ({ ...prev, isOpen: false }))} 
+            />
         </div>
     )
 }

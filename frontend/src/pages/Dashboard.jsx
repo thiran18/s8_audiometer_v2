@@ -207,16 +207,11 @@ export default function Dashboard() {
                                         {(section.patients || []).slice(0, 3).map(stu => {
                                             const patientScreenings = screeningsByPatient[stu.id] || []
                                             const latest = patientScreenings[patientScreenings.length - 1]
-                                            const isNormal = latest?.classification && (
-                                                latest.classification.includes('Grade 0') ||
-                                                latest.classification.toLowerCase().includes('normal')
-                                            )
-
                                             return (
                                                 <div key={stu.id} className="flex items-center justify-between text-xs">
                                                     <span className="text-gray-600 dark:text-slate-300 truncate mr-2">{stu.name}</span>
-                                                    <span className={`font-medium ${latest?.clinical_report ? 'text-green-600 dark:text-green-400' : isNormal ? 'text-green-600 dark:text-green-400' : latest ? 'text-orange-500 dark:text-orange-400' : 'text-gray-400 dark:text-slate-600'}`}>
-                                                        {latest?.clinical_report ? 'Reported' : isNormal ? 'Normal' : latest ? 'Pending Review' : 'N/A'}
+                                                    <span className={`font-medium ${latest?.clinical_report ? 'text-green-600 dark:text-green-400' : latest ? 'text-orange-500 dark:text-orange-400' : 'text-gray-400 dark:text-slate-600'}`}>
+                                                        {latest?.clinical_report ? 'Reported' : latest ? 'Pending Review' : 'N/A'}
                                                     </span>
                                                 </div>
                                             )

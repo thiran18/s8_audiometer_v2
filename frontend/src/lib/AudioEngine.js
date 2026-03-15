@@ -41,9 +41,14 @@ class AudioEngine {
         // Convert dbHL to Gain (0.0 to 1.0)
         // Note: This is a simplified linear approximation. 
         // Real audiometers need specific calibration per headphone.
+        // Human ears are naturally less sensitive to low frequencies (like 250Hz), requiring more energy
+        const RETSPL_OFFSETS = { 250: 18.5, 500: 4.5, 1000: 0, 2000: 2.5, 4000: 2.5, 8000: 6.0 };
+        const offset = RETSPL_OFFSETS[frequency] || 0;
+        const compensatedDb = dbHL + offset;
+
         // Formula: gain = 10 ^ ((db - Max_Output) / 20)
         // For web safety, we map 0-100dB roughly to 0-1 gain with a safety cap.
-        const gain = this.dbToGain(dbHL);
+        const gain = this.dbToGain(compensatedDb);
 
         // Ramp up to avoid click
         const now = this.ctx.currentTime;
@@ -88,12 +93,11 @@ class AudioEngine {
 
         // Simple log scale mapping
         // 100dB = 1.0
-        // 0dB = 0.00001 (approx)
         // Using standard acoustic formula: Gain = 10^(dB/20) normalized
-        // Let's assume Max Volume (System 100%) = 100dB HL (approx for phone)
-        // So Gain = 10 ^ ((dB - 100) / 20)
-
-        return Math.pow(10, (clamped - 100) / 20);
+        // Let's assume Max Volume (System 100%) = 80dB HL (approx for phone)
+        // Shifting the reference to 80 allows lower dBs to be audible on consumer gear 
+        // without destroying the mathematical relationship of the tones.
+        return Math.pow(10, (clamped - 80) / 20);
     }
 }
 

@@ -72,14 +72,10 @@ export default function SectionDetail() {
                 const latest = (student.screenings || []).sort((a, b) => new Date(b.date) - new Date(a.date))[0]
                 return {
                     ...student,
-                    latestResult: latest?.classification || 'Pending',
+                    latestResult: latest?.classification || 'Pending (Untested)',
                     latestResultId: latest?.id,
                     latestDate: latest?.date,
-                    reportNeeded: latest &&
-                        latest.classification &&
-                        !latest.classification.includes('Normal') &&
-                        !latest.classification.includes('Grade 0') &&
-                        !latest.clinical_report
+                    reportNeeded: latest && !latest.clinical_report
                 }
             })
 
